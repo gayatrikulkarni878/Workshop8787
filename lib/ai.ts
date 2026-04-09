@@ -27,18 +27,23 @@ export async function generateQuizOrFlashcard(
        
        Format: {"flashcards": [{"front": "...", "back": "..."}]}`;
 
-  const response = await groq.chat.completions.create({
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: notes },
-    ],
-    model: "llama-3.3-70b-versatile",
-    response_format: { type: "json_object" },
-  });
+  try {
+    const response = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: notes },
+      ],
+      model: "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
+    });
 
-  const content = response.choices[0].message.content;
-  if (!content) throw new Error("Failed to generate content");
+    const content = response.choices[0].message.content;
+    if (!content) throw new Error("Failed to generate content");
 
-  const data = JSON.parse(content);
-  return mode === "quiz" ? data.questions : data.flashcards;
+    const data = JSON.parse(content);
+    return mode === "quiz" ? data.questions : data.flashcards;
+  } catch (error: any) {
+    console.error("Groq SDK error:", error.message || error);
+    throw error;
+  }
 }

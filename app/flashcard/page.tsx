@@ -1,19 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, BrainCircuit, Home } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, Home, BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Flashcard from "@/components/Flashcard";
 import { cn } from "@/lib/utils";
+import Flashcard from "@/components/Flashcard";
+import { useSearchParams } from "next/navigation";
 
 export default function FlashcardPage() {
-  const [activeTab, setActiveTab] = useState(1);
-  const flashcards = [
-    { front: "Mitochondria", back: "The powerhouse of the cell, providing energy in the form of ATP." },
-    { front: "Photosynthesis", back: "Process by which plants use sunlight to synthesize nutrients from CO2 and water." },
-    // More mock cards...
-  ];
+  const searchParams = useSearchParams();
+  const [flashcards, setFlashcards] = useState<any[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const data = searchParams.get("data");
+    if (data) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(data));
+        setFlashcards(parsed);
+      } catch (e) {
+        console.error("Failed to parse flashcard data", e);
+      }
+    }
+  }, [searchParams]);
+
+  if (flashcards.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="font-bold text-muted-foreground animate-pulse">Preparing your Cards...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentCard = flashcards[currentIndex];
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8 flex flex-col items-center">
@@ -25,16 +48,16 @@ export default function FlashcardPage() {
         </Link>
         
         <div className="flex gap-2 bg-muted/50 p-1.5 rounded-2xl overflow-x-auto max-w-[50%] md:max-w-none no-scrollbar">
-          {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+          {flashcards.map((_, index) => (
             <button
-              key={num}
+              key={index}
               className={cn(
                 "min-w-[40px] h-10 rounded-xl text-sm font-bold transition-all",
-                activeTab === num ? "bg-card text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground"
+                currentIndex === index ? "bg-card text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground"
               )}
-              onClick={() => setActiveTab(num)}
+              onClick={() => setCurrentIndex(index)}
             >
-              {num}
+              {index + 1}
             </button>
           ))}
         </div>
@@ -53,8 +76,8 @@ export default function FlashcardPage() {
         {/* Central Card */}
         <div className="flex-1 max-w-2xl">
           <Flashcard 
-            content={flashcards[0].front} 
-            backContent={flashcards[0].back} 
+            content={currentCard.front} 
+            backContent={currentCard.back} 
           />
         </div>
 
@@ -67,7 +90,8 @@ export default function FlashcardPage() {
           variant="ghost" 
           size="lg" 
           className="rounded-2xl px-8 gap-3 font-bold text-muted-foreground hover:text-foreground hover:bg-accent/50 group"
-          onClick={() => setActiveTab(prev => Math.max(1, prev - 1))}
+          onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+          disabled={currentIndex === 0}
         >
           <ChevronLeft className="w-6 h-6 transition-transform group-hover:-translate-x-1" /> Prev
         </Button>
@@ -76,7 +100,8 @@ export default function FlashcardPage() {
           variant="ghost" 
           size="lg" 
           className="rounded-2xl px-8 gap-3 font-bold text-muted-foreground hover:text-foreground hover:bg-accent/50 group"
-          onClick={() => setActiveTab(prev => Math.min(7, prev + 1))}
+          onClick={() => setCurrentIndex(prev => Math.min(flashcards.length - 1, prev + 1))}
+          disabled={currentIndex === flashcards.length - 1}
         >
           Next <ChevronRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
         </Button>

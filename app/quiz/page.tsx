@@ -1,23 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Layers, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import QuizQuestion from "@/components/QuizQuestion";
+import { useSearchParams } from "next/navigation";
 
 export default function QuizPage() {
+  const searchParams = useSearchParams();
+  const [questions, setQuestions] = useState<any[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
-  
-  const questions = [
-    {
-      q: "What is the primary function of a Mitochondria in a cell?",
-      options: ["Protein Synthesis", "Energy Production", "Waste Removal", "DNA Storage"]
-    },
-    // Mock data for other questions
-  ];
+
+  useEffect(() => {
+    const data = searchParams.get("data");
+    if (data) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(data));
+        setQuestions(parsed);
+      } catch (e) {
+        console.error("Failed to parse quiz data", e);
+      }
+    }
+  }, [searchParams]);
+
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="font-bold text-muted-foreground animate-pulse">Preparing your Quiz...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentQ = questions[currentQuestion];
 
   const progress = ((currentQuestion + 1) / 10) * 100;
 
@@ -47,8 +67,8 @@ export default function QuizPage() {
 
       <main className="flex-1 w-full flex flex-col justify-center">
         <QuizQuestion 
-          question={questions[0].q} 
-          options={questions[0].options} 
+          question={currentQ.question || currentQ.q} 
+          options={currentQ.options} 
           selectedOption={selectedOption}
           onSelect={setSelectedOption}
         />

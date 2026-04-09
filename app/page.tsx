@@ -42,9 +42,15 @@ export default function Home() {
 
     startTransition(async () => {
       try {
-        await generateContent(formData);
+        const response = await generateContent(formData);
+        if (response.success) {
+          const encodedData = encodeURIComponent(JSON.stringify(response.data));
+          window.location.href = `/${response.mode}?data=${encodedData}`;
+        } else {
+          alert("Generation failed. Please try again.");
+        }
       } catch (error) {
-        alert("Generation failed. Please try again.");
+        alert("An unexpected error occurred. Please try again.");
         console.error(error);
       }
     });

@@ -1,9 +1,12 @@
 "use server";
 
 import { generateQuizOrFlashcard } from "@/lib/ai";
-import { redirect } from "next/navigation";
 import PDFParser from "pdf2json";
 import mammoth from "mammoth";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 async function extractTextFromFile(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -21,10 +24,14 @@ async function extractTextFromFile(file: File): Promise<string> {
     file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || 
     file.name.endsWith(".docx")
   ) {
-    const result = await mammoth.extractRawText({ buffer });
-    return result.value;
+    try {
+      const result = await mammoth.extractRawText({ buffer });
+      return result.value;
+    } catch (error) {
+      console.error("Error extracting DOCX:", error);
+      throw error;
+    }
   } else {
-    // Assume text file
     return file.text();
   }
 }
@@ -42,17 +49,28 @@ export async function generateContent(formData: FormData) {
       const extractedText = await extractTextFromFile(file);
       textToProcess += "\n" + extractedText;
     } catch (error) {
-      console.error("Error extracting text:", error);
+      console.error("Error extracting text from file:", error);
       throw new Error("Failed to extract text from file");
     }
   }
 
-  if (!textToProcess.trim()) {
-    throw new Error("No content provided");
-  }
+  if (!textToProcess.trim()) throw new Error("No content provided");
 
-  const result = await generateQuizOrFlashcard(textToProcess, mode, count);
-  const encodedData = encodeURIComponent(JSON.stringify(result));
-  
-  redirect(`/${mode}?data=${encodedData}`);
+  try {
+    // Generate content using AI
+    const result = await generateQuizOrFlashcard(textToProcess.substring(0, 15000), mode, count);
+
+    // Automatically save to Convex History
+    const topic = file?.name || notes?.substring(0, 30) || "Untitled Notes";
+    await convex.mutation(api.history.saveHistory, {
+      topic,
+      mode,
+      data: result,
+    });
+
+    return { success: true, data: result, mode };
+  } catch (error) {
+    console.error("AI Generation Error:", error);
+    return { success: false, error: "Generation failed" };
+  }
 }
