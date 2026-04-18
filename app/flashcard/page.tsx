@@ -3,14 +3,14 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Home, BrainCircuit, Layers, Share2, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, BrainCircuit, Share2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import Flashcard from "@/components/Flashcard";
 import BackgroundParticles from "@/components/BackgroundParticles";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 
 interface FlashcardData {
   front: string;
@@ -23,7 +23,7 @@ export default function FlashcardPage() {
 
   const id = searchParams.get("id");
   const rawData = searchParams.get("data");
-  const historyData = useQuery(api.history.getSingleSet, id ? { id: id as any } : "skip");
+  const historyData = useQuery(api.history.getSingleSet, id ? { id: id as Id<"history"> } : "skip");
 
   const flashcards = useMemo(() => {
     if (rawData) {
@@ -60,7 +60,8 @@ export default function FlashcardPage() {
   const currentCard = flashcards[currentIndex];
 
   const handleShare = () => {
-    let text = `🧠 Quizzy AI - Neural Mastery Pack: ${historyData.topic}\n\n`;
+    const topic = historyData?.topic || "Neural Mastery Pack";
+    let text = `🧠 Quizzy AI - ${topic}\n\n`;
     flashcards.forEach((card, i) => {
       text += `[${i + 1}] ${card.front}\n💡 ${card.back}\n\n`;
     });

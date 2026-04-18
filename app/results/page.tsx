@@ -20,7 +20,16 @@ export default function Results() {
   const results = useMemo(() => {
     if (!data) return [];
     try {
-      return JSON.parse(decodeURIComponent(data)) as Record<string, any>[];
+      return JSON.parse(decodeURIComponent(data)) as Array<{
+        question?: string;
+        q?: string;
+        options?: string[];
+        correctIndex?: number;
+        answer?: string;
+        userAnswer?: string;
+        correct: boolean;
+        topic?: string;
+      }>;
     } catch (e) {
       console.error("Failed to parse results data", e);
       return [];
@@ -170,7 +179,7 @@ export default function Results() {
             </div>
 
             <div className="space-y-6 overflow-y-auto max-h-[70vh] pr-4 no-scrollbar">
-              {results.map((r: any, i: number) => (
+              {results.map((r, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}

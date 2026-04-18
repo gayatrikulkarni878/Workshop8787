@@ -10,12 +10,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import BackgroundParticles from "@/components/BackgroundParticles";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 
 interface QuizQuestionData {
   question?: string;
   q?: string;
   options: string[];
   correctIndex: number;
+  topic?: string;
 }
 
 export default function QuizPage() {
@@ -26,7 +28,7 @@ export default function QuizPage() {
 
   const id = searchParams.get("id");
   const rawData = searchParams.get("data");
-  const historyData = useQuery(api.history.getSingleSet, id ? { id: id as any } : "skip");
+  const historyData = useQuery(api.history.getSingleSet, id ? { id: id as Id<"history"> } : "skip");
   
   const questions = useMemo(() => {
     if (rawData) {
@@ -37,7 +39,7 @@ export default function QuizPage() {
       }
     }
     if (!historyData) return [];
-    return historyData.data as any[];
+    return historyData.data as QuizQuestionData[];
   }, [historyData, rawData]);
 
   if (historyData === undefined && !rawData) {
@@ -68,14 +70,13 @@ export default function QuizPage() {
   };
 
   const handleFinish = () => {
-    const results = questions.map((item, i) => {
-      const q = item as unknown as QuizQuestionData;
+    const results = questions.map((q, i) => {
       return {
         q: q.question || q.q,
         answer: q.options[q.correctIndex],
         userAnswer: userAnswers[i] !== undefined ? q.options[userAnswers[i]] : undefined,
         correct: userAnswers[i] === q.correctIndex,
-        topic: item.topic || "General"
+        topic: q.topic || "General"
       };
     });
     const encodedResults = encodeURIComponent(JSON.stringify(results));

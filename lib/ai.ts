@@ -14,7 +14,6 @@ export async function generateQuizOrFlashcard(
     throw new Error("GROQ_API_KEY is missing. Please add it to your environment variables.");
   }
   
-  const contentToAnalyze = (notes || "").trim() || "General knowledge";
   const systemPrompt = `You are a high-speed educational synthesizer. Generate exactly ${count} ${mode} items.
 Format: JSON only.
 Difficulty: ${difficulty}.
@@ -58,8 +57,9 @@ SCHEMA:
       items: data.items,
       meta: safeMeta
     };
-  } catch (error: any) {
-    console.error("CRITICAL AI FAILURE:", error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("CRITICAL AI FAILURE:", errorMessage);
     
     // EMERGENCY FALLBACK: If AI fails, return a high-quality mock set to keep the session alive
     if (process.env.NODE_ENV === "development") {
