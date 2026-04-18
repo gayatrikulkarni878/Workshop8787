@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Sparkles, BrainCircuit } from "lucide-react";
 
 interface FlashcardProps {
   content: string;
@@ -13,37 +15,51 @@ export default function Flashcard({ content, backContent }: FlashcardProps) {
 
   return (
     <div 
-      className="group perspective-1000 w-full max-w-2xl h-80 md:h-[400px] cursor-pointer mx-auto"
+      className="perspective-1000 w-full max-w-2xl h-[450px] cursor-pointer mx-auto"
       onClick={() => setIsFlipped(!isFlipped)}
     >
-      <div className={cn(
-        "relative w-full h-full transition-all duration-700 preserve-3d",
-        isFlipped ? "rotate-y-180" : ""
-      )}>
+      <motion.div 
+        className="relative w-full h-full preserve-3d"
+        animate={{ rotateY: isFlipped ? 180 : 0 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 260, 
+          damping: 20, 
+          duration: 0.6 
+        }}
+      >
         {/* Front */}
-        <div className="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-8 md:p-12 bg-card border-2 border-border/50 rounded-[2.5rem] shadow-2xl shadow-foreground/5 text-center">
-          <span className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] mb-8">Definition</span>
-          <p className="text-2xl md:text-3xl font-medium leading-relaxed text-foreground">
+        <div className="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-12 md:p-24 bg-white/80 backdrop-blur-3xl border border-primary/10 rounded-[4rem] shadow-2xl shadow-primary/5 text-center overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+          <div className="mb-14 p-6 rounded-3xl bg-primary/5 text-primary border border-primary/10">
+             <BrainCircuit className="w-12 h-12" />
+          </div>
+          <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-6">Neural Concept</span>
+          <p className="text-4xl md:text-5xl font-black leading-tight tracking-tighter">
             {content}
           </p>
-          <div className="mt-auto pt-8 flex flex-col items-center gap-2">
-             <div className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
-             <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Tap to reveal</span>
+          <div className="mt-auto pt-12">
+             <div className="flex items-center gap-2 justify-center">
+                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">Breakdown ready</span>
+             </div>
           </div>
         </div>
 
         {/* Back */}
-        <div className="absolute inset-0 backface-hidden rotate-y-180 flex flex-col items-center justify-center p-8 md:p-12 bg-primary/5 border-2 border-primary/20 rounded-[2.5rem] shadow-2xl shadow-primary/5 text-center">
-          <span className="text-xs font-bold text-primary/60 uppercase tracking-[0.2em] mb-8">Meaning</span>
-          <p className="text-xl md:text-2xl font-medium leading-relaxed text-foreground italic">
-            "{backContent}"
+        <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] flex flex-col items-center justify-center p-12 md:p-24 bg-zinc-950 text-white dark:bg-zinc-50 dark:text-black border border-primary/10 rounded-[4rem] shadow-2xl text-center overflow-hidden">
+          <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
+          <div className="mb-14 p-6 rounded-3xl bg-white/10 dark:bg-black/10 text-white dark:text-black">
+             <Sparkles className="w-12 h-12" />
+          </div>
+          <p className="text-3xl md:text-4xl font-medium leading-relaxed tracking-tight italic">
+            &quot;{backContent}&quot;
           </p>
-          <div className="mt-auto pt-8 flex flex-col items-center gap-2">
-             <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
-             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tap to flip back</span>
+          <div className="mt-auto pt-12">
+             <div className="h-1.5 w-16 bg-primary/40 rounded-full mx-auto" />
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

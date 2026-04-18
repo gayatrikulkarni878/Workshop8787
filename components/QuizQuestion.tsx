@@ -1,8 +1,8 @@
 "use client";
 
-import { Card } from "@/components/ui/button";
-import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Sparkles, Brain } from "lucide-react";
 
 interface QuizQuestionProps {
   question: string;
@@ -15,31 +15,90 @@ export default function QuizQuestion({ question, options, selectedOption, onSele
   const letters = ["A", "B", "C", "D"];
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="bg-card border-none shadow-xl shadow-foreground/5 rounded-3xl p-8 md:p-12 text-center">
-        <h2 className="text-2xl md:text-3xl font-semibold leading-tight text-foreground">
+    <div className="w-full max-w-3xl mx-auto space-y-10">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="glass border border-white shadow-sm rounded-3xl p-10 md:p-14 text-center relative overflow-hidden group"
+      >
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+        <div className="flex justify-center mb-8 relative">
+           <motion.div 
+             animate={{ y: [0, -5, 0] }}
+             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+             className="p-4 rounded-2xl bg-primary/5 text-primary border border-primary/10 relative z-10"
+           >
+              <Brain className="w-6 h-6" />
+           </motion.div>
+           <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full opacity-20 scale-150" />
+        </div>
+        <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground leading-tight relative z-10">
           {question}
         </h2>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4">
         {options.map((option, index) => (
-          <Button
+          <motion.button
             key={index}
-            variant="outline"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1, duration: 0.4 }}
+            whileHover={{ 
+              y: -4, 
+              scale: 1.01,
+              backgroundColor: "rgba(255, 255, 255, 0.8)",
+              boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)"
+            }}
+            whileTap={{ scale: 0.98 }}
             className={cn(
-              "h-16 px-6 justify-start text-left text-lg font-bold rounded-2xl transition-all border-2",
+              "p-6 min-h-20 text-left flex items-center gap-5 rounded-2xl border transition-all duration-500",
               selectedOption === index 
-                ? "border-primary bg-primary/5 shadow-inner" 
-                : "border-border hover:border-muted-foreground/30 hover:bg-accent/20"
+                ? "border-primary bg-primary text-primary-foreground shadow-xl shadow-primary/20 ring-4 ring-primary/5" 
+                : "border-zinc-100 bg-white/40 backdrop-blur-xl text-zinc-700 hover:border-primary/30"
             )}
             onClick={() => onSelect(index)}
           >
-            <span className="mr-3">{letters[index]}.</span>
-            <span className="flex-1">{option}</span>
-          </Button>
+            <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm border transition-all duration-500 shrink-0",
+                selectedOption === index ? "bg-white text-primary border-white" : "bg-primary/5 border-primary/10 text-primary"
+            )}>
+              {letters[index]}
+            </div>
+            <span className="font-semibold text-lg leading-snug">{option}</span>
+            {selectedOption === index && (
+              <motion.div 
+                layoutId="active-indicator"
+                className="ml-auto"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+              >
+                <Sparkles className="w-5 h-5 text-white/80" />
+              </motion.div>
+            )}
+          </motion.button>
         ))}
       </div>
+
+      <AnimatePresence>
+        {selectedOption !== undefined && (
+          <motion.div 
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex gap-4 items-center"
+          >
+            <Sparkles className="w-5 h-5 text-primary shrink-0" />
+            <div className="space-y-0.5">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-primary">Intelligence Insight</p>
+              <p className="text-xs font-semibold text-zinc-600">
+                Connection established with option {letters[selectedOption]}. Preparing next conceptual bridge.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

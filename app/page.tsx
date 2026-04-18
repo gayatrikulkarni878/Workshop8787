@@ -1,203 +1,359 @@
 "use client";
 
-import { useState, useRef, useTransition } from "react";
-import { ArrowRight, Upload, Layers, BrainCircuit, Sparkles, FileText, Loader2, X } from "lucide-react";
+import { useState, useRef, useTransition, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Layers, BrainCircuit, Sparkles, FileText, Loader2, X, Plus, ArrowRight, RefreshCw } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
+import BackgroundParticles from "@/components/BackgroundParticles";
+import FloatingDecoIcons from "@/components/FloatingDecoIcons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useSearchParams, useRouter } from "next/navigation";
 import { generateContent } from "@/app/actions";
+import { saveToLocalHistory } from "@/lib/history";
+
+const loadingStates = [
+  "Curating knowledge base...",
+  "Distilling essential paths...",
+  "Elegance in processing...",
+  "Neural synthesis in progress...",
+  "Synchronizing intelligence..."
+];
 
 export default function Home() {
+  const router = useRouter();
   const [activeMode, setActiveMode] = useState<"quiz" | "flashcard">("quiz");
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard" | "mixed">("mixed");
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [loaderIndex, setLoaderIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+  useEffect(() => {
+    if (isPending) {
+      const interval = setInterval(() => {
+        setLoaderIndex((prev) => (prev + 1) % loadingStates.length);
+      }, 2000);
+      return () => clearInterval(interval);
     }
-  };
+  }, [isPending]);
 
-  const clearFile = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    if (!notes.trim() && !file) {
-      alert("Please provide some notes or upload a file");
-      return;
-    }
-
+    if (!notes.trim() && !file) return;
+    setError(null);
     const formData = new FormData();
     formData.append("notes", notes);
     if (file) formData.append("file", file);
     formData.append("mode", activeMode);
-    formData.append("count", "10"); // Force count = 10
+    formData.append("difficulty", difficulty);
+    formData.append("count", "8");
 
     startTransition(async () => {
       try {
         const response = await generateContent(formData);
         if (response.success) {
+          // Save to localStorage history (always reliable, no backend needed)
+          const topic = file?.name || notes?.substring(0, 40) || "Untitled Notes";
+          saveToLocalHistory({
+            topic,
+            mode: response.mode as "quiz" | "flashcard",
+            data: response.data,
+          });
+          window.dispatchEvent(new Event("quizzy_history_updated"));
+
           const encodedData = encodeURIComponent(JSON.stringify(response.data));
-          window.location.href = `/${response.mode}?data=${encodedData}`;
+          router.push(`/${response.mode}?data=${encodedData}`);
         } else {
-          alert("Generation failed. Please try again.");
+          setError(response.error || "Generation failed");
         }
-      } catch (error) {
-        alert("An unexpected error occurred. Please try again.");
-        console.error(error);
+      } catch (err) {
+        console.error(err);
+        setError("Connection error. Please try again.");
       }
     });
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground overflow-hidden">
-      {/* Sidebar - Hidden on mobile */}
+    <div className="flex min-h-screen relative overflow-hidden bg-background dot-grid text-foreground antialiased selection:bg-primary/20">
+      <BackgroundParticles />
+      <FloatingDecoIcons />
       <Sidebar className="hidden lg:flex" />
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col p-4 md:p-12 overflow-y-auto">
-        <header className="flex justify-between items-center mb-16 lg:hidden">
-           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">Q</div>
-            <span className="font-bold text-lg">Quizzy AI</span>
-          </div>
-          <Button variant="ghost" size="icon">
-             <Upload className="w-5 h-5" />
-          </Button>
-        </header>
+      <main className="flex-1 p-6 md:p-12 lg:p-24 flex flex-col items-center z-10 relative">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-4xl space-y-8"
+        >
+          <header className="space-y-4 text-center relative">
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }} 
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <Badge variant="outline" className="px-5 py-1.5 rounded-full font-bold text-[9px] tracking-[0.2em] uppercase border-primary/20 text-primary bg-white/60 backdrop-blur-md shadow-sm">
+                 <Sparkles className="w-3 h-3 mr-2 animate-pulse" />
+                 Elite Educational Studio
+              </Badge>
+            </motion.div>
+            
+            <div className="space-y-4">
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.8 }}
+                className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] text-glow"
+              >
+                Refine Your <br className="hidden md:block"/>
+                <span className="text-primary italic relative inline-block">
+                  Deep Intelligence.
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ delay: 1, duration: 1.5, ease: "easeInOut" }}
+                    className="absolute -bottom-1 left-0 h-1 bg-primary/20 rounded-full"
+                  />
+                </span>
+              </motion.h1>
+            </div>
+          </header>
 
-        <section className="max-w-4xl mx-auto w-full flex-1 flex flex-col justify-center items-center text-center space-y-12">
-          <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-1000">
-            <Badge variant="secondary" className="px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-primary/5 text-primary border-primary/10">
-              <Sparkles className="w-3 h-3 mr-2" /> Powered by Groq
-            </Badge>
-            <h1 className="text-5xl md:text-7xl font-black tracking-tight text-foreground leading-[1.1]">
-              Quizzy <span className="text-muted-foreground/30">AI</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground font-medium max-w-lg mx-auto">
-              Learn any topic with fun. Just drop your notes and let AI do the magic.
-            </p>
-          </div>
-
-          <Card className="w-full max-w-4xl overflow-hidden rounded-[2.5rem] border-none shadow-2xl shadow-foreground/5 bg-card/90 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-700 delay-200">
-            <div className="flex flex-col md:flex-row h-full min-h-[450px]">
-              {/* Left Side: Input Zone */}
-              <div className="flex-[1.5] p-8 border-b md:border-b-0 md:border-r border-border/50 flex flex-col gap-6 bg-muted/20">
-                <div className="flex-1 flex flex-col gap-4 relative">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 1, type: "spring", stiffness: 50 }}
+          >
+            <Card className="rounded-[2.5rem] border border-white/80 glass overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.08)] relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+              <div className="flex flex-col md:flex-row min-h-[400px] relative z-10">
+                {/* Primary Panel */}
+                <div className="flex-1 p-8 md:p-10 space-y-8 flex flex-col border-r border-zinc-100/50">
                   <textarea
-                    placeholder="Paste your notes, essay, or study material here..."
-                    className="flex-1 w-full bg-transparent border-none focus:ring-0 resize-none text-lg placeholder:text-muted-foreground/50 scrollbar-hide"
+                    placeholder="Paste your study materials here..."
+                    className="h-32 w-full bg-transparent border-none focus:ring-0 resize-none text-xl font-semibold tracking-tight placeholder:text-zinc-200 py-2 transition-all leading-[1.3] outline-none"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                   />
                   
-                  {file && (
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm rounded-2xl border border-primary/20 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 text-left overflow-hidden">
-                        <p className="text-sm font-bold truncate">{file.name}</p>
-                        <p className="text-[10px] text-muted-foreground uppercase font-black">{(file.size / 1024).toFixed(1)} KB • Ready</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={clearFile}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="space-y-6">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Library Synthesis</span>
+                    <AnimatePresence mode="wait">
+                      {file ? (
+                        <motion.div 
+                          key="file-active"
+                          initial={{ opacity: 0, scale: 0.95 }} 
+                          animate={{ opacity: 1, scale: 1 }} 
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="p-6 bg-primary/5 rounded-[2rem] flex items-center gap-5 border border-primary/10 shadow-inner group"
+                        >
+                          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
+                            <FileText className="w-6 h-6" />
+                          </div>
+                          <div className="flex flex-col flex-1 truncate">
+                            <span className="text-sm font-black truncate">{file.name}</span>
+                            <button 
+                              onClick={() => setFile(null)}
+                              className="text-[10px] font-bold text-primary/60 hover:text-primary text-left uppercase tracking-tighter transition-colors"
+                            >
+                              Discard Library
+                            </button>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div 
+                          key="file-empty"
+                          whileHover={{ scale: 1.02, backgroundColor: "rgba(0,0,0,0.02)" }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => fileInputRef.current?.click()}
+                          className="h-20 rounded-[2rem] border-2 border-dashed border-zinc-200 hover:border-primary/40 transition-all cursor-pointer flex items-center justify-center gap-4 group bg-zinc-50/30 overflow-hidden relative"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-zinc-100 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                            <Plus className="w-4 h-4 text-zinc-400 group-hover:text-primary" />
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-primary">Import Source (PDF, IMG, DOCX)</span>
+                          <motion.div 
+                            initial={{ x: "-100%" }}
+                            whileHover={{ x: "100%" }}
+                            transition={{ duration: 0.8 }}
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12"
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      className="hidden" 
+                      accept=".pdf,.docx,.txt,image/*"
+                      onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
                 </div>
 
-                <div 
-                  className="h-24 rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 bg-background/50 hover:bg-background transition-colors cursor-pointer group"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept=".pdf,.docx,.txt"
-                    onChange={handleFileChange}
-                  />
-                  <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="text-xs font-bold text-muted-foreground">Upload PDF, DOCX, or TXT</span>
+                {/* Sidebar Controls */}
+                <div className="w-full md:w-[320px] p-8 bg-zinc-50/40 flex flex-col gap-6 relative overflow-hidden text-black">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10" />
+                  
+                  <div className="space-y-6 relative z-10">
+                    <div className="space-y-3">
+                       <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.4em]">Protocol Intensity</span>
+                       <div className="flex bg-white/50 p-1 rounded-xl border border-primary/10 backdrop-blur-md">
+                          {["easy", "medium", "hard", "mixed"].map((d) => (
+                            <button
+                              key={d}
+                              onClick={() => setDifficulty(d as any)}
+                              className={cn(
+                                "flex-1 py-1.5 px-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
+                                difficulty === d ? "bg-primary text-white shadow-md" : "text-zinc-400 hover:text-primary"
+                              )}
+                            >
+                              {d}
+                            </button>
+                          ))}
+                       </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.4em]">Mode Selection</span>
+                      {[
+                        { id: "quiz", label: "The Quiz Protocol", icon: BrainCircuit, desc: "Conceptual validation" },
+                        { id: "flashcard", label: "The Flashcard Canvas", icon: Layers, desc: "Mnemonic restoration" }
+                      ].map((mode) => (
+                        <motion.button
+                          key={mode.id}
+                          whileHover={{ x: 4, backgroundColor: "rgba(255,255,255,0.8)" }}
+                          onClick={() => setActiveMode(mode.id as any)}
+                          className={cn(
+                            "w-full p-4 rounded-2xl text-left border flex items-center gap-4 transition-all duration-500",
+                            activeMode === mode.id 
+                              ? "bg-white border-primary shadow-lg text-primary" 
+                              : "border-transparent text-zinc-400 hover:border-primary/10"
+                          )}
+                        >
+                          <div className={cn(
+                             "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-700 shadow-sm",
+                             activeMode === mode.id ? "bg-primary text-white shadow-md shadow-primary/20 rotate-0" : "bg-zinc-100 rotate-[-5deg]"
+                          )}>
+                            <mode.icon className="w-4 h-4" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-[0.1em]">{mode.label}</span>
+                            <span className="text-[9px] opacity-60 font-medium italic truncate">{mode.desc}</span>
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-auto pt-6 border-t border-zinc-100/50 relative z-10">
+                    <Button 
+                      className="w-full h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-700 shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.01] active:scale-95 bg-primary overflow-hidden relative group border-none text-white"
+                      onClick={handleGenerate}
+                      disabled={isPending || (!notes && !file)}
+                    >
+                      <span className="relative z-10 flex items-center gap-3">
+                        {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Initiate Synthesis <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-500" /></>}
+                      </span>
+                      <motion.div 
+                        initial={{ x: "-100%" }}
+                        whileHover={{ x: "100%" }}
+                        transition={{ duration: 1, ease: "easeInOut" }}
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
+                      />
+                    </Button>
+                  </div>
                 </div>
               </div>
+            </Card>
+          </motion.div>
+        </motion.div>
+      </main>
 
-              {/* Right Side: Options */}
-              <div className="flex-1 p-8 flex flex-col gap-6 relative">
-                <div className="flex-1 flex flex-col gap-6">
-                  <div className="space-y-4">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left block">Mode Selection</span>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        variant={activeMode === "quiz" ? "default" : "outline"}
-                        className={cn(
-                          "h-24 rounded-2xl flex flex-col gap-2 font-bold border-2 transition-all",
-                          activeMode === "quiz" ? "border-primary shadow-lg shadow-primary/20" : "border-border/50"
-                        )}
-                        onClick={() => setActiveMode("quiz")}
-                      >
-                        <BrainCircuit className={cn("w-6 h-6", activeMode === "quiz" ? "text-primary-foreground" : "text-primary")} />
-                        Quiz
-                      </Button>
-                      <Button
-                        variant={activeMode === "flashcard" ? "default" : "outline"}
-                        className={cn(
-                          "h-24 rounded-2xl flex flex-col gap-2 font-bold border-2 transition-all",
-                          activeMode === "flashcard" ? "border-primary shadow-lg shadow-primary/20" : "border-border/50"
-                        )}
-                        onClick={() => setActiveMode("flashcard")}
-                      >
-                        <Layers className={cn("w-6 h-6", activeMode === "flashcard" ? "text-primary-foreground" : "text-primary")} />
-                        Cards
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="p-6 rounded-2xl border-2 border-border/50 bg-background/50 flex flex-col gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Questions Count</span>
-                    <div className="flex items-center justify-between">
-                      <span className="text-3xl font-black">10</span>
-                      <Badge variant="outline" className="text-[10px] font-black uppercase">Standard</Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Generate Button */}
-                <Button 
-                  size="lg" 
-                  className="w-full h-16 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                  onClick={handleGenerate}
-                  disabled={isPending}
-                >
-                  {isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      Generate
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
+      <AnimatePresence>
+        {(isPending || error) && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-white/80 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center"
+          >
+            <div className="w-full max-w-md space-y-12">
+              <div className="relative flex justify-center">
+                <motion.div 
+                  animate={{ 
+                    scale: error ? [1, 1] : [1, 1.2, 1], 
+                    opacity: error ? 1 : [0.3, 0.6, 0.3] 
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className={cn(
+                    "absolute inset-0 rounded-full blur-3xl",
+                    error ? "bg-rose-500/20" : "bg-primary"
                   )}
-                </Button>
+                />
+                {error ? (
+                  <div className="w-20 h-20 rounded-[2rem] bg-rose-500 flex items-center justify-center text-white shadow-2xl relative z-10">
+                    <X className="w-10 h-10" />
+                  </div>
+                ) : (
+                  <Loader2 className="w-16 h-16 animate-spin text-primary relative z-10" />
+                )}
+              </div>
+
+              <div className="space-y-6">
+                <AnimatePresence mode="wait">
+                  {error ? (
+                    <motion.div
+                      key="error-ui"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-8"
+                    >
+                      <div className="space-y-4">
+                        <h2 className="text-3xl font-black tracking-tight text-zinc-800 uppercase italic">Synthesis Interrupted</h2>
+                        <p className="text-sm font-medium text-zinc-500 leading-relaxed max-w-xs mx-auto">
+                          {error}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-4">
+                        <Button 
+                          onClick={handleGenerate}
+                          className="w-full h-16 rounded-2xl bg-primary text-white font-black uppercase tracking-[0.3em] text-[10px] shadow-xl shadow-primary/20 hover:scale-105 transition-all border-none"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-3" /> Generate Again
+                        </Button>
+                        <Button 
+                          variant="ghost"
+                          onClick={() => setError(null)}
+                          className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[9px] text-zinc-400 hover:text-zinc-800"
+                        >
+                          Return to Parameters
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div 
+                      key={loaderIndex} 
+                      initial={{ opacity: 0, y: 10 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      className="flex flex-col items-center gap-3"
+                    >
+                      <p className="text-2xl font-black italic tracking-tight text-primary uppercase">
+                        {loadingStates[loaderIndex]}
+                      </p>
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.5em] animate-pulse">Synchronizing Intelligence</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
-          </Card>
-        </section>
-
-        <footer className="mt-auto pt-12 text-center">
-          <p className="text-xs font-bold text-muted-foreground/30 uppercase tracking-[0.4em]">Designed for Perfection • 2026</p>
-        </footer>
-      </main>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

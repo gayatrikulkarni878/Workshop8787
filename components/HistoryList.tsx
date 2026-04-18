@@ -1,19 +1,35 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { BrainCircuit, Layers, Clock, ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import { Clock, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { getLocalHistory, type HistoryItem } from "@/lib/history";
 
 export default function HistoryList() {
-  const history = useQuery(api.history.getHistory);
+  const [history, setHistory] = useState<HistoryItem[] | undefined>(undefined);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Load from localStorage
+    setHistory(getLocalHistory());
+
+    // Listen for storage events (updates from other tabs / same tab via custom event)
+    const onStorage = () => setHistory(getLocalHistory());
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("quizzy_history_updated", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("quizzy_history_updated", onStorage);
+    };
+  }, []);
 
   if (history === undefined) {
     return (
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-2 p-2">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />
+          <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse border border-border" />
         ))}
       </div>
     );
@@ -21,47 +37,47 @@ export default function HistoryList() {
 
   if (history.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center gap-2">
-        <Clock className="w-8 h-8 text-muted-foreground/30" />
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">No history yet</p>
+      <div className="flex flex-col items-center justify-center p-12 text-center gap-4">
+        <Clock className="w-6 h-6 text-muted-foreground/30" />
+        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">No activity found</p>
       </div>
     );
   }
 
-  const handleReattempt = (item: any) => {
+  const handleReattempt = (item: HistoryItem) => {
     const encodedData = encodeURIComponent(JSON.stringify(item.data));
-    window.location.href = `/${item.mode}?data=${encodedData}`;
+    router.push(`/${item.mode}?data=${encodedData}`);
   };
 
   return (
-    <div className="flex flex-col gap-3 p-4">
-      {history.map((item) => (
-        <button
+    <div className="flex flex-col gap-2 p-2">
+      {history.map((item, i) => (
+        <motion.button
           key={item._id}
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: i * 0.05 }}
+          whileHover={{ x: 4 }}
           onClick={() => handleReattempt(item)}
-          className="group text-left p-4 rounded-2xl border border-border/50 bg-card hover:border-primary/50 hover:bg-primary/5 transition-all"
+          className="group text-left p-4 rounded-2xl border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-border transition-all duration-300"
         >
-          <div className="flex justify-between items-start mb-2">
-            <Badge variant="secondary" className={cn(
-              "text-[10px] font-black uppercase tracking-tighter px-2 h-5 flex items-center gap-1",
-              item.mode === "quiz" ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"
-            )}>
-              {item.mode === "quiz" ? <BrainCircuit className="w-3 h-3" /> : <Layers className="w-3 h-3" />}
-              {item.mode}
-            </Badge>
-            <span className="text-[10px] font-bold text-muted-foreground">
-              {new Date(item.createdAt).toLocaleDateString()}
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+              {item.mode} set
+            </span>
+            <span className="text-[9px] font-bold text-muted-foreground/50">
+              {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
             </span>
           </div>
-          
-          <h4 className="font-bold text-sm line-clamp-1 group-hover:text-primary transition-colors">
+
+          <h4 className="font-bold text-[13px] line-clamp-1 group-hover:text-primary transition-colors">
             {item.topic}
           </h4>
-          
-          <div className="mt-2 flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-            Re-attempt <ArrowRight className="w-3 h-3" />
+
+          <div className="mt-3 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all duration-300">
+            Reattempt <ArrowRight className="w-2.5 h-2.5" />
           </div>
-        </button>
+        </motion.button>
       ))}
     </div>
   );
