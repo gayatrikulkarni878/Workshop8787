@@ -79,6 +79,6 @@ SCHEMA:
       };
     }
     
-    throw new Error(error.message || "Intelligence generation bridge failed");
+    throw new Error(errorMessage || "Intelligence generation bridge failed");
   }
 }
