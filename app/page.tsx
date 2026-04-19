@@ -122,7 +122,7 @@ export default function Home() {
   };
 
   const convertPdfToImage = async (file: File): Promise<File> => {
-    const pdfjsLib = window['pdfjs-dist/build/pdf'] || await new Promise<any>((resolve) => {
+    const pdfjsLib = (window as any)['pdfjs-dist/build/pdf'] || await new Promise<any>((resolve) => {
       const script = document.createElement('script');
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
       script.onload = () => {
