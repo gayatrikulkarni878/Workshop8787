@@ -20,7 +20,7 @@ export default function QuizQuestion({ question, options, selectedOption, onSele
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="glass border border-white shadow-sm rounded-3xl p-10 md:p-14 text-center relative overflow-hidden group"
+        className="glass border border-white shadow-sm rounded-3xl p-6 md:p-14 text-center relative overflow-hidden group"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
         <div className="flex justify-center mb-8 relative">
@@ -33,7 +33,7 @@ export default function QuizQuestion({ question, options, selectedOption, onSele
            </motion.div>
            <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full opacity-20 scale-150" />
         </div>
-        <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground leading-tight relative z-10">
+        <h2 className="text-xl md:text-3xl font-semibold tracking-tight text-foreground leading-tight relative z-10">
           {question}
         </h2>
       </motion.div>
@@ -58,7 +58,7 @@ export default function QuizQuestion({ question, options, selectedOption, onSele
             }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-              "p-6 min-h-20 text-left flex items-center gap-5 rounded-2xl border transition-all duration-500 relative overflow-hidden",
+              "p-5 md:p-6 min-h-16 md:min-h-20 text-left flex items-center gap-4 md:gap-5 rounded-2xl border transition-all duration-500 relative overflow-hidden",
               selectedOption === index 
                 ? "border-primary shadow-xl shadow-primary/20 ring-4 ring-primary/20" 
                 : "border-zinc-100 backdrop-blur-xl hover:border-primary/30"
@@ -72,7 +72,7 @@ export default function QuizQuestion({ question, options, selectedOption, onSele
               {letters[index]}
             </div>
             <span className={cn(
-              "font-semibold text-lg leading-snug transition-colors duration-500 relative z-10",
+              "font-semibold text-base md:text-lg leading-snug transition-colors duration-500 relative z-10",
               selectedOption === index ? "text-white" : "text-zinc-700"
             )}>
               {option || "No option text provided"}

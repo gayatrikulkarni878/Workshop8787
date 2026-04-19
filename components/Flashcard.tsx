@@ -35,7 +35,7 @@ export default function Flashcard({ content, backContent }: FlashcardProps) {
              <BrainCircuit className="w-12 h-12" />
           </div>
           <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-6">Neural Concept</span>
-          <p className="text-4xl md:text-5xl font-black leading-tight tracking-tighter">
+          <p className="text-2xl md:text-5xl font-black leading-tight tracking-tighter">
             {content}
           </p>
           <div className="mt-auto pt-12">
@@ -47,12 +47,12 @@ export default function Flashcard({ content, backContent }: FlashcardProps) {
         </div>
 
         {/* Back */}
-        <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] flex flex-col items-center justify-center p-12 md:p-24 bg-zinc-950 text-white dark:bg-zinc-50 dark:text-black border border-primary/10 rounded-[4rem] shadow-2xl text-center overflow-hidden">
+        <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] flex flex-col items-center justify-center p-6 md:p-24 bg-zinc-950 text-white dark:bg-zinc-50 dark:text-black border border-primary/10 rounded-[4rem] shadow-2xl text-center overflow-hidden">
           <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
           <div className="mb-14 p-6 rounded-3xl bg-white/10 dark:bg-black/10 text-white dark:text-black">
              <Sparkles className="w-12 h-12" />
           </div>
-          <p className="text-3xl md:text-4xl font-medium leading-relaxed tracking-tight italic">
+          <p className="text-lg md:text-4xl font-medium leading-relaxed tracking-tight italic">
             &quot;{backContent}&quot;
           </p>
           <div className="mt-auto pt-12">
