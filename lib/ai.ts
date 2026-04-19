@@ -21,11 +21,16 @@ Difficulty: ${difficulty}.
 SCHEMA:
 {
   "items": [${mode === "quiz" ? 
-    `{"question": "string", "options": ["A", "B", "C", "D"], "correctIndex": number, "topic": "string"}` : 
+    `{"question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number, "explanation": "string", "topic": "string"}` : 
     `{"front": "string", "back": "string", "topic": "string"}`}
   ],
   "meta": { "topics": ["string"] }
-}`;
+}
+
+CRITICAL RULES:
+1. The "options" array MUST contain the actual text of the answers (e.g., "The Mitochondria").
+2. DO NOT use single letters like "A", "B", "C", "D" as options.
+3. Each option must be a descriptive string.`;
 
   try {
     const response = await groq.chat.completions.create({
@@ -33,7 +38,7 @@ SCHEMA:
         { role: "system", content: systemPrompt },
         { role: "user", content: notes.substring(0, 8000) },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" },
       temperature: 0.1,
     });

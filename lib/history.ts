@@ -1,42 +1,49 @@
-const HISTORY_KEY = "quizzy_history";
+const HISTORY_KEY = "quizzy_history_v2";
 
-export interface HistoryItem {
-  _id: string;
+export interface QuizResult {
+  id: string;
+  sessionId?: string;
   topic: string;
-  mode: "quiz" | "flashcard";
-  data: unknown;
-  createdAt: number;
+  score: number;
+  total: number;
+  date: string;
 }
 
-export function saveToLocalHistory(item: Omit<HistoryItem, "_id" | "createdAt">): string {
-  const id = `local_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-  const newItem: HistoryItem = {
-    _id: id,
-    ...item,
-    createdAt: Date.now(),
-  };
-  const existing = getLocalHistory();
-  // Keep only the last 50 entries
-  const updated = [newItem, ...existing].slice(0, 50);
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-  } catch (e) {
-    console.warn("Failed to save history to localStorage:", e);
+export const saveQuizResult = (result: Omit<QuizResult, "id" | "date">) => {
+  if (typeof window === "undefined") return;
+  const history = getQuizHistory();
+  
+  // Prevent duplicate saving of the same session
+  if (result.sessionId && history.some(item => item.sessionId === result.sessionId)) {
+    console.log("Session already recorded, skipping.");
+    return;
   }
-  return id;
-}
 
-export function getLocalHistory(): HistoryItem[] {
+  const newEntry: QuizResult = {
+    ...result,
+    id: Math.random().toString(36).substring(2, 9),
+    date: new Date().toISOString(),
+  };
+
+  const updatedHistory = [newEntry, ...history].slice(0, 15); // Increased to 15
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+  // Trigger UI update
+  window.dispatchEvent(new Event("quizzy_history_updated"));
+};
+
+export const getQuizHistory = (): QuizResult[] => {
+  if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as HistoryItem[];
-  } catch {
+    const data = localStorage.getItem(HISTORY_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    console.error("History parse error", e);
     return [];
   }
-}
+};
 
-export function getLocalHistoryItem(id: string): HistoryItem | null {
-  const items = getLocalHistory();
-  return items.find((i) => i._id === id) ?? null;
-}
+export const clearHistory = () => {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(HISTORY_KEY);
+  window.dispatchEvent(new Event("quizzy_history_updated"));
+};

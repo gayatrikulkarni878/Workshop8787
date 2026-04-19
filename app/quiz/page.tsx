@@ -23,8 +23,9 @@ interface QuizQuestionData {
 export default function QuizPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
+  const [startTime] = useState(Date.now());
 
   const id = searchParams.get("id");
   const rawData = searchParams.get("data");
@@ -74,12 +75,20 @@ export default function QuizPage() {
       return {
         q: q.question || q.q,
         answer: q.options[q.correctIndex],
-        userAnswer: userAnswers[i] !== undefined ? q.options[userAnswers[i]] : undefined,
+         userAnswer: userAnswers[i] !== undefined ? q.options[userAnswers[i]] : undefined,
         correct: userAnswers[i] === q.correctIndex,
+        explanation: q.explanation || "No explanation available.",
         topic: q.topic || "General"
       };
     });
-    const encodedResults = encodeURIComponent(JSON.stringify(results));
+    const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+    const resultObj = {
+      sessionId: Math.random().toString(36).substring(2, 15),
+      results,
+      timeTaken,
+      completedAt: new Date().toISOString()
+    };
+    const encodedResults = encodeURIComponent(JSON.stringify(resultObj));
     router.push(`/results?data=${encodedResults}`);
   };
 

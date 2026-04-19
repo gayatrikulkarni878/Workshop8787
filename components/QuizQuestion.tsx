@@ -43,20 +43,25 @@ export default function QuizQuestion({ question, options, selectedOption, onSele
           <motion.button
             key={index}
             initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            animate={{ 
+              opacity: 1, 
+              x: 0,
+              backgroundColor: selectedOption === index ? "rgb(74, 52, 39)" : "rgba(255, 255, 255, 0.4)",
+              color: selectedOption === index ? "rgb(255, 255, 255)" : "rgb(63, 63, 70)"
+            }}
             transition={{ delay: index * 0.1, duration: 0.4 }}
             whileHover={{ 
               y: -4, 
               scale: 1.01,
-              backgroundColor: "rgba(255, 255, 255, 0.8)",
+              backgroundColor: selectedOption === index ? "rgb(74, 52, 39)" : "rgba(255, 255, 255, 0.8)",
               boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)"
             }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-              "p-6 min-h-20 text-left flex items-center gap-5 rounded-2xl border transition-all duration-500",
+              "p-6 min-h-20 text-left flex items-center gap-5 rounded-2xl border transition-all duration-500 relative overflow-hidden",
               selectedOption === index 
-                ? "border-primary bg-primary text-primary-foreground shadow-xl shadow-primary/20 ring-4 ring-primary/5" 
-                : "border-zinc-100 bg-white/40 backdrop-blur-xl text-zinc-700 hover:border-primary/30"
+                ? "border-primary shadow-xl shadow-primary/20 ring-4 ring-primary/20" 
+                : "border-zinc-100 backdrop-blur-xl hover:border-primary/30"
             )}
             onClick={() => onSelect(index)}
           >
@@ -66,7 +71,12 @@ export default function QuizQuestion({ question, options, selectedOption, onSele
             )}>
               {letters[index]}
             </div>
-            <span className="font-semibold text-lg leading-snug">{option}</span>
+            <span className={cn(
+              "font-semibold text-lg leading-snug transition-colors duration-500 relative z-10",
+              selectedOption === index ? "text-white" : "text-zinc-700"
+            )}>
+              {option || "No option text provided"}
+            </span>
             {selectedOption === index && (
               <motion.div 
                 layoutId="active-indicator"

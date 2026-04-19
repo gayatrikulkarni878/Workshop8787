@@ -12,14 +12,54 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSearchParams, useRouter } from "next/navigation";
 import { generateContent } from "@/app/actions";
-import { saveToLocalHistory } from "@/lib/history";
+import { getQuizHistory, QuizResult } from "@/lib/history";
+import { History } from "lucide-react";
+
+function HistorySection() {
+  const [history, setHistory] = useState<QuizResult[]>([]);
+
+  useEffect(() => {
+    const update = () => setHistory(getQuizHistory().slice(0, 5));
+    update();
+    window.addEventListener("quizzy_history_updated", update);
+    window.addEventListener("storage", update);
+    return () => {
+      window.removeEventListener("quizzy_history_updated", update);
+      window.removeEventListener("storage", update);
+    };
+  }, []);
+
+  if (history.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 px-1">
+        <History className="w-3 h-3 text-primary" />
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Recent Activity</span>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {history.map((item) => (
+          <div key={item.id} className="p-3 rounded-2xl bg-white/50 border border-zinc-100 flex items-center justify-between group hover:border-primary/20 transition-all">
+            <div className="flex flex-col truncate pr-4">
+              <span className="text-[10px] font-black text-zinc-800 truncate uppercase">{item.topic}</span>
+              <span className="text-[8px] font-bold text-zinc-400">{new Date(item.date).toLocaleDateString()}</span>
+            </div>
+            <div className="text-[12px] font-black text-primary/30 group-hover:text-primary transition-colors">
+              {item.score}/{item.total}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const loadingStates = [
-  "Curating knowledge base...",
-  "Distilling essential paths...",
-  "Elegance in processing...",
-  "Neural synthesis in progress...",
-  "Synchronizing intelligence..."
+  "Extracting source data...",
+  "Distilling essential concepts...",
+  "Structuring conceptual nodes...",
+  "Synthesizing quiz protocol...",
+  "Finalizing neural bridge..."
 ];
 
 export default function Home() {
@@ -27,6 +67,7 @@ export default function Home() {
   const [activeMode, setActiveMode] = useState<"quiz" | "flashcard">("quiz");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard" | "mixed">("mixed");
   const [notes, setNotes] = useState("");
+  const [questionCount, setQuestionCount] = useState(8);
   const [file, setFile] = useState<File | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loaderIndex, setLoaderIndex] = useState(0);
@@ -51,20 +92,12 @@ export default function Home() {
     if (file) formData.append("file", file);
     formData.append("mode", activeMode);
     formData.append("difficulty", difficulty);
-    formData.append("count", "8");
+    formData.append("count", questionCount.toString());
 
     startTransition(async () => {
       try {
         const response = await generateContent(formData);
         if (response.success) {
-          // Save to localStorage history (always reliable, no backend needed)
-          const topic = file?.name || notes?.substring(0, 40) || "Untitled Notes";
-          saveToLocalHistory({
-            topic,
-            mode: response.mode as "quiz" | "flashcard",
-            data: response.data,
-          });
-          window.dispatchEvent(new Event("quizzy_history_updated"));
 
           const encodedData = encodeURIComponent(JSON.stringify(response.data));
           router.push(`/${response.mode}?data=${encodedData}`);
@@ -112,6 +145,7 @@ export default function Home() {
                 Refine Your <br className="hidden md:block"/>
                 <span className="text-primary italic relative inline-block">
                   Deep Intelligence.
+                  <p className="text-sm font-medium text-zinc-400 mt-2 lowercase tracking-wider">Generate Smart Quizzes in Seconds with AI</p>
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: "100%" }}
@@ -185,7 +219,7 @@ export default function Home() {
                         </motion.div>
                       )}
                     </AnimatePresence>
-
+ 
                     <input 
                       type="file" 
                       ref={fileInputRef}
@@ -193,6 +227,11 @@ export default function Home() {
                       accept=".pdf,.docx,.txt,image/*"
                       onChange={(e) => setFile(e.target.files?.[0] || null)}
                     />
+                  </div>
+
+                  {/* MINI HISTORY SECTION added here */}
+                  <div className="pt-8 border-t border-zinc-100/50">
+                    <HistorySection />
                   </div>
                 </div>
 
@@ -214,6 +253,24 @@ export default function Home() {
                               )}
                             >
                               {d}
+                            </button>
+                          ))}
+                       </div>
+                    </div>
+
+                    <div className="space-y-3">
+                       <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.4em]">Question Count</span>
+                       <div className="flex bg-white/50 p-1 rounded-xl border border-primary/10 backdrop-blur-md">
+                          {[5, 10, 15, 20].map((c) => (
+                            <button
+                              key={c}
+                              onClick={() => setQuestionCount(c)}
+                              className={cn(
+                                "flex-1 py-1.5 px-1 rounded-lg text-[10px] font-black transition-all",
+                                questionCount === c ? "bg-primary text-white shadow-md scale-105" : "text-zinc-400 hover:text-primary hover:bg-primary/5"
+                              )}
+                            >
+                              {c}
                             </button>
                           ))}
                        </div>

@@ -3,41 +3,50 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles, BrainCircuit, Lock, User, Loader2, ArrowRight } from "lucide-react";
+import { Sparkles, BrainCircuit, Lock, Mail, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import BackgroundParticles from "@/components/BackgroundParticles";
 import FloatingDecoIcons from "@/components/FloatingDecoIcons";
+import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 
 export default function LoginPage() {
-  const [id, setId] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (isLoggedIn === "true") {
-      router.push("/");
-    }
-  }, [router]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    // Simulate small delay for premium feel
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    if (id === "quizzyai" && password === "123") {
+    try {
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
       localStorage.setItem("isLoggedIn", "true");
       router.push("/");
-    } else {
-      setError("Invalid credential sequence. Verification failed.");
+    } catch (err: any) {
+      setError(err.message || "Authentication failed.");
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+        await signInWithPopup(auth, provider);
+        localStorage.setItem("isLoggedIn", "true");
+        router.push("/");
+    } catch (err: any) {
+        setError(err.message || "Google Sign-In failed.");
     }
   };
 
@@ -59,21 +68,21 @@ export default function LoginPage() {
                 Q
               </div>
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight">Access Protocol</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">{isSignUp ? "Create Account" : "Access Protocol"}</h1>
             <p className="text-zinc-500 text-xs font-medium italic">Synchronize your deep intelligence session.</p>
           </header>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleAuth} className="space-y-6">
             <div className="space-y-4">
               <div className="relative group">
                 <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-zinc-300 group-focus-within:text-primary transition-colors">
-                  <User className="w-4 h-4" />
+                  <Mail className="w-4 h-4" />
                 </div>
                 <Input
-                  type="text"
-                  placeholder="Intelligence ID"
-                  value={id}
-                  onChange={(e) => setId(e.target.value)}
+                  type="email"
+                  placeholder="Intelligence Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="h-16 pl-14 rounded-2xl bg-white/50 border-primary/5 focus:border-primary/20 focus:ring-primary/10 transition-all font-semibold tracking-tight placeholder:text-zinc-200"
                   required
                 />
@@ -104,21 +113,30 @@ export default function LoginPage() {
               </motion.p>
             )}
 
-            <Button 
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-16 rounded-2xl bg-primary text-white font-black uppercase tracking-[0.3em] text-[10px] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all border-none relative overflow-hidden group"
-            >
-              <span className="relative z-10 flex items-center gap-3">
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Initiate Protocol <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}
-              </span>
-              <motion.div 
-                initial={{ x: "-100%" }}
-                whileHover={{ x: "100%" }}
-                transition={{ duration: 0.8 }}
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
-              />
-            </Button>
+            <div className="space-y-4">
+                <Button 
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-16 rounded-2xl bg-primary text-white font-black uppercase tracking-[0.3em] text-[10px] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all border-none relative overflow-hidden group"
+                >
+                <span className="relative z-10 flex items-center gap-3">
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{isSignUp ? "Initialize" : "Initiate"} Protocol <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}
+                </span>
+                </Button>
+
+                <Button 
+                type="button"
+                onClick={handleGoogleSignIn}
+                variant="outline"
+                className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[9px] border-primary/10 hover:bg-primary/5"
+                >
+                Sign In with Google
+                </Button>
+            </div>
+            
+            <p className="text-center text-[10px] font-bold text-zinc-400 uppercase tracking-widest cursor-pointer hover:text-primary transition-colors" onClick={() => setIsSignUp(!isSignUp)}>
+                {isSignUp ? "Already have an ID? Login" : "No account? Create Research ID"}
+            </p>
           </form>
 
           <footer className="text-center">

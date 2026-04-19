@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as attempts from "../attempts.js";
 import type * as history from "../history.js";
 
 import type {
@@ -17,6 +18,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  attempts: typeof attempts;
   history: typeof history;
 }>;
 

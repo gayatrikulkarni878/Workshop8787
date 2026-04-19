@@ -4,40 +4,54 @@ import { useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import confetti from "canvas-confetti";
-import { Home, Plus, Sparkles, Layers, Star, Loader2, RefreshCw, BarChart3, Target } from "lucide-react";
+import { Sparkles, Layers, Star, Loader2, RefreshCw, BarChart3, Clock, Send, Share, Home, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ScoreCircle from "@/components/ScoreCircle";
 import BackgroundParticles from "@/components/BackgroundParticles";
 import FloatingDecoIcons from "@/components/FloatingDecoIcons";
+import { saveQuizResult } from "@/lib/history";
+import confetti from "canvas-confetti";
 
 export default function Results() {
   const searchParams = useSearchParams();
-  const router = useRouter(); // Defined here
+  const router = useRouter(); 
   const data = searchParams.get("data");
 
-  const results = useMemo(() => {
-    if (!data) return [];
+   const { results, timeTaken, sessionId } = useMemo(() => {
+    if (!data) return { results: [], timeTaken: 0, sessionId: null };
     try {
-      return JSON.parse(decodeURIComponent(data)) as Array<{
-        question?: string;
-        q?: string;
-        options?: string[];
-        correctIndex?: number;
-        answer?: string;
-        userAnswer?: string;
-        correct: boolean;
-        topic?: string;
-      }>;
+      const parsed = JSON.parse(decodeURIComponent(data));
+      if (parsed.results) {
+        return {
+          results: parsed.results as any[],
+          timeTaken: parsed.timeTaken || 0,
+          sessionId: parsed.sessionId || null
+        };
+      }
+      return { results: parsed as any[], timeTaken: 0, sessionId: null };
     } catch (e) {
       console.error("Failed to parse results data", e);
-      return [];
+      return { results: [], timeTaken: 0, sessionId: null };
     }
   }, [data]);
 
-  const score = results.filter(r => r.correct).length;
-  const percentage = results.length > 0 ? (score / results.length) * 100 : 0;
+  const { score, percentage } = useMemo(() => {
+    const s = results.filter(r => r.correct).length;
+    const p = results.length > 0 ? (s / results.length) * 100 : 0;
+    return { score: s, percentage: p };
+  }, [results]);
+
+  useEffect(() => {
+    if (results.length > 0) {
+      saveQuizResult({
+        sessionId: sessionId || undefined,
+        topic: results[0]?.topic || "General",
+        score,
+        total: results.length,
+      });
+    }
+  }, [results, score, timeTaken, sessionId]);
 
   useEffect(() => {
     if (percentage >= 80) {
@@ -75,9 +89,28 @@ export default function Results() {
 
   if (results.length === 0) {
     return (
-      <div className="min-h-screen bg-background dot-grid flex flex-col items-center justify-center p-6 text-center">
-        <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
-        <p className="font-bold text-primary italic uppercase tracking-widest text-[10px]">Processing Diagnostic...</p>
+      <div className="min-h-screen bg-background dot-grid flex flex-col items-center p-8 md:p-12 lg:p-24 space-y-12">
+        <header className="w-full max-w-6xl flex justify-between items-center mb-12">
+           <div className="h-10 w-10 skeleton rounded-2xl" />
+           <div className="h-10 w-40 skeleton rounded-2xl" />
+        </header>
+
+        <main className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-12">
+           <aside className="lg:col-span-4 space-y-8">
+              <div className="h-96 skeleton rounded-[3rem]" />
+              <div className="h-64 skeleton rounded-[2.5rem]" />
+           </aside>
+           <section className="lg:col-span-8 space-y-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-40 skeleton rounded-[2rem] w-full" />
+              ))}
+           </section>
+        </main>
+        
+        <div className="fixed inset-0 flex flex-col items-center justify-center z-50 pointer-events-none">
+           <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
+           <p className="font-bold text-primary italic uppercase tracking-widest text-[10px]">Processing Diagnostic...</p>
+        </div>
       </div>
     );
   }
@@ -130,9 +163,28 @@ export default function Results() {
               <p className="text-4xl font-black italic tracking-tighter text-zinc-800">
                 {score}/{results.length}
               </p>
-              <div className="mt-8 pt-8 border-t border-primary/5">
+              <div className="mt-8 pt-8 border-t border-primary/5 space-y-4">
                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Status: {percentage >= 80 ? 'Elite' : percentage >= 50 ? 'Proficient' : 'Training'}</p>
+                 <div className="flex items-center justify-center gap-2 text-primary">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{timeTaken}s Total Time</span>
+                 </div>
               </div>
+            </motion.div>
+
+            {/* Motivational Message */}
+            <motion.div 
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: 0.3 }}
+               className="p-8 rounded-[2rem] bg-primary/5 border border-primary/10 text-center"
+            >
+               <p className="text-sm font-semibold text-primary italic">
+                 {percentage === 100 ? "Pure brilliance. You've mastered this domain." : 
+                  percentage >= 80 ? "Exceptional performance. Minor refinements needed." :
+                  percentage >= 50 ? "Solid foundation. Keep synthesizing." :
+                  "The path to mastery begins with persistence. Try again."}
+               </p>
             </motion.div>
 
             {/* Analysis Matrix */}
@@ -201,7 +253,7 @@ export default function Results() {
                     </div>
                     <div className="space-y-4 flex-1">
                       <div className="flex justify-between items-start">
-                        <p className="text-xl font-bold tracking-tight text-zinc-800 leading-snug lg:max-w-[80%]">
+                        <p className="text-xl font-bold tracking-tight text-zinc-900 leading-snug lg:max-w-[80%]">
                            {r.q}
                         </p>
                         {r.topic && <span className="text-[8px] font-black border border-zinc-100 px-2 py-1 rounded-full text-zinc-400 uppercase tracking-widest">{r.topic}</span>}
@@ -211,12 +263,16 @@ export default function Results() {
                             <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Result</span>
                             <p className={cn("text-sm font-bold", r.correct ? "text-emerald-600" : "text-rose-600")}>{r.userAnswer || 'No Selection'}</p>
                          </div>
-                         {!r.correct && (
+                          {!r.correct && (
                            <div className="space-y-1">
                               <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Correct Answer</span>
                               <p className="text-sm font-bold text-emerald-600">{r.answer}</p>
                            </div>
                          )}
+                      </div>
+                      <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100/50">
+                         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Intelligence Insight</p>
+                         <p className="text-xs text-zinc-500 leading-relaxed italic">{r.explanation || "No further data available for this node."}</p>
                       </div>
                     </div>
                   </div>
@@ -224,12 +280,34 @@ export default function Results() {
               ))}
             </div>
 
-            <footer className="pt-10 flex justify-center">
+             <footer className="pt-10 flex flex-col md:flex-row items-center justify-center gap-6">
               <Link href="/">
                 <Button size="lg" className="h-16 px-12 rounded-[2rem] font-black uppercase text-xs tracking-[0.3em] gap-3 bg-primary text-white shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-105 active:scale-95 border-none">
                   <RefreshCw className="w-4 h-4" /> Reset Mastery Session
                 </Button>
               </Link>
+              <div className="flex gap-4">
+                 <Button 
+                   variant="outline" 
+                   onClick={() => {
+                     const text = `I just scored ${score}/${results.length} on Quizzy AI! 🧠🔥\n\nCheck it out: ${window.location.origin}`;
+                     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.origin)}`, '_blank');
+                   }}
+                   className="h-16 w-16 rounded-[2rem] glass border-white/80 hover:scale-110 transition-transform"
+                 >
+                    <Send className="w-5 h-5 text-primary" />
+                 </Button>
+                 <Button 
+                   variant="outline" 
+                   onClick={() => {
+                     const text = `I just scored ${score}/${results.length} on Quizzy AI! 🧠🔥 Check it out!`;
+                     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin)}`, '_blank');
+                   }}
+                   className="h-16 w-16 rounded-[2rem] glass border-white/80 hover:scale-110 transition-transform"
+                 >
+                    <Share className="w-5 h-5 text-primary" />
+                 </Button>
+              </div>
             </footer>
           </div>
         </div>

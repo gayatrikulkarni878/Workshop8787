@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Brain, Sparkles, Book, Atom, GraduationCap, Lightbulb } from "lucide-react";
+import { Brain, Sparkles, Book, Atom, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const icons = [
@@ -10,9 +10,6 @@ const icons = [
   { Icon: Book, delay: 4, x: "82%", y: "75%", size: 50, color: "text-emerald-500/30" },
   { Icon: Atom, delay: 1, x: "12%", y: "82%", size: 40, color: "text-indigo-500/30" },
   { Icon: GraduationCap, delay: 3, x: "48%", y: "5%", size: 55, color: "text-rose-500/30" },
-  { Icon: Lightbulb, delay: 5, x: "92%", y: "45%", size: 40, color: "text-yellow-500/30" },
-  { Icon: Brain, delay: 1.5, x: "25%", y: "65%", size: 30, color: "text-violet-500/20" },
-  { Icon: Sparkles, delay: 3.5, x: "70%", y: "25%", size: 25, color: "text-orange-500/20" },
 ];
 
 export default function FloatingDecoIcons() {

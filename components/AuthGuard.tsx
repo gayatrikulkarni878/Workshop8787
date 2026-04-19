@@ -12,8 +12,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
     const isLoginPage = pathname === "/login";
 
+    // Allow entry even if not logged in - we'll treat them as a guest
     if (!isLoggedIn && !isLoginPage) {
-      router.push("/login");
+        // Option 1: Auto-login as guest for zero friction
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userRole", "guest");
+        setIsReady(true);
     } else if (isLoggedIn && isLoginPage) {
       router.push("/");
     } else {

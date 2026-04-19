@@ -3,6 +3,7 @@
 import { generateQuizOrFlashcard } from "@/lib/ai";
 import PDFParser from "pdf2json";
 import mammoth from "mammoth";
+import Groq from "groq-sdk";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 
@@ -17,19 +18,19 @@ async function extractTextFromFile(file: File): Promise<string> {
   
   // Image Support (OCR via Groq Vision)
   if (file.type.startsWith("image/")) {
-    const base64Image = buffer.toString("base64");
-    const groq = new (await import("groq-sdk")).default({ apiKey: process.env.GROQ_API_KEY });
+    const visionData = buffer.toString("base64");
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     const response = await groq.chat.completions.create({
       messages: [
         {
           role: "user",
           content: [
             { type: "text", text: "Extract all educational text from this image concisely." },
-            { type: "image_url", image_url: { url: `data:${file.type};base64,${base64Image}` } }
+            { type: "image_url", image_url: { url: `data:${file.type};base64,${visionData}` } }
           ]
         }
       ],
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "llama-3.2-11b-vision-preview",
     });
     return response.choices[0].message.content || "";
   }
@@ -83,7 +84,7 @@ export async function generateContent(formData: FormData) {
 
   try {
     // Generate content using lightning-fast model
-    const result = await generateQuizOrFlashcard(textToProcess.substring(0, 8000), mode, count, difficulty);
+    const result = await generateQuizOrFlashcard(textToProcess.substring(0, 6000), mode, count, difficulty);
 
     // Sync to history (Attempt to save with a tight timeout to keep it snappy)
     const topic = file?.name || notes?.substring(0, 30) || "Untitled Notes";
@@ -99,10 +100,10 @@ export async function generateContent(formData: FormData) {
           console.log("✅ History synced successfully. ID:", id);
           return id;
         }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Database Latency")), 8000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Database Latency")), 2500))
       ]);
     } catch (saveError) {
-      console.warn("⚠️ Database sync bypassed:", saveError instanceof Error ? saveError.message : "Connection failed");
+      console.warn("⚠️ Database sync bypassed (saving in background):", saveError instanceof Error ? saveError.message : "Connection failed");
     }
 
     return { 

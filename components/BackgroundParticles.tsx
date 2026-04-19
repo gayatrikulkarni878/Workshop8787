@@ -7,7 +7,7 @@ export default function BackgroundParticles() {
   const [particles, setParticles] = useState<number[]>([]);
 
   useEffect(() => {
-    setParticles(Array.from({ length: 30 }, (_, i) => i));
+    setParticles(Array.from({ length: 12 }, (_, i) => i));
   }, []);
 
   return (
