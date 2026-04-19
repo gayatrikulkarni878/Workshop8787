@@ -7,17 +7,18 @@ import { ChevronLeft, ChevronRight, Home, BrainCircuit, Share2, Loader2 } from "
 import { Button } from "@/components/ui/button";
 import Flashcard from "@/components/Flashcard";
 import BackgroundParticles from "@/components/BackgroundParticles";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { Suspense } from "react";
 
 interface FlashcardData {
   front: string;
   back: string;
 }
 
-export default function FlashcardPage() {
+function FlashcardContent() {
   const searchParams = useSearchParams();
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -148,5 +149,18 @@ export default function FlashcardPage() {
         </Button>
       </footer>
     </motion.div>
+  );
+}
+
+export default function FlashcardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background dot-grid flex flex-col items-center justify-center p-6 text-center">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
+        <p className="font-bold text-primary italic uppercase tracking-widest text-[10px]">Initializing...</p>
+      </div>
+    }>
+      <FlashcardContent />
+    </Suspense>
   );
 }

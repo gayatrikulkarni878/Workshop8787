@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -13,72 +13,58 @@ import FloatingDecoIcons from "@/components/FloatingDecoIcons";
 import { saveQuizResult } from "@/lib/history";
 import confetti from "canvas-confetti";
 
-export default function Results() {
+function ResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter(); 
   const data = searchParams.get("data");
 
-   const { results, timeTaken, sessionId } = useMemo(() => {
-    if (!data) return { results: [], timeTaken: 0, sessionId: null };
+  const results = useMemo(() => {
+    if (!data) return null;
     try {
-      const parsed = JSON.parse(decodeURIComponent(data));
-      if (parsed.results) {
-        return {
-          results: parsed.results as any[],
-          timeTaken: parsed.timeTaken || 0,
-          sessionId: parsed.sessionId || null
-        };
-      }
-      return { results: parsed as any[], timeTaken: 0, sessionId: null };
+      return JSON.parse(decodeURIComponent(data));
     } catch (e) {
       console.error("Failed to parse results data", e);
-      return { results: [], timeTaken: 0, sessionId: null };
+      return null;
     }
   }, [data]);
 
-  const { score, percentage } = useMemo(() => {
-    const s = results.filter(r => r.correct).length;
-    const p = results.length > 0 ? (s / results.length) * 100 : 0;
-    return { score: s, percentage: p };
-  }, [results]);
-
+  // Effects and Logic
   useEffect(() => {
-    if (results.length > 0) {
+    if (results && results.results) {
+      const correctCount = results.results.filter((r: any) => r.correct).length;
+      const totalCount = results.results.length;
+      const scorePercentage = (correctCount / totalCount) * 100;
+
+      // Celebrate if score is high!
+      if (scorePercentage >= 70) {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+        const interval: any = setInterval(function() {
+          const timeLeft = animationEnd - Date.now();
+
+          if (timeLeft <= 0) {
+            return clearInterval(interval);
+          }
+
+          const particleCount = 50 * (timeLeft / duration);
+          confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+          confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+        }, 250);
+      }
+
+      // Save to local history with deduplication
       saveQuizResult({
-        sessionId: sessionId || undefined,
-        topic: results[0]?.topic || "General",
-        score,
-        total: results.length,
+        topic: results.results[0]?.topic || "AI Synthesis",
+        score: correctCount,
+        total: totalCount,
+        date: new Date().toISOString(),
+        sessionId: results.sessionId // Pass the unique session ID
       });
     }
-  }, [results, score, timeTaken, sessionId]);
-
-  useEffect(() => {
-    if (percentage >= 80) {
-      const duration = 3 * 1000;
-      const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-
-      const interval = setInterval(function() {
-        const timeLeft = animationEnd - Date.now();
-
-        if (timeLeft <= 0) {
-          return clearInterval(interval);
-        }
-
-        const particleCount = 50 * (timeLeft / duration);
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-      }, 250);
-    }
-  }, [percentage]);
-
-  // Analysis: Extract Topics
-  const topicAnalysis = useMemo(() => {
-    const topics: Record<string, { correct: number; total: number }> = {};
-    results.forEach(r => {
       const t = r.topic || "General";
       if (!topics[t]) topics[t] = { correct: 0, total: 0 };
       topics[t].total++;
@@ -314,4 +300,17 @@ export default function Results() {
       </main>
     </div>
   );
+}
+
+export default function Results() {
+  return (
+    <Suspense fallback={
+       <div className="min-h-screen bg-background dot-grid flex flex-col items-center justify-center p-6 text-center">
+         <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
+         <p className="font-bold text-primary italic uppercase tracking-widest text-[10px]">Assembling Neural Outcome...</p>
+       </div>
+    }>
+       <ResultsContent />
+    </Suspense>
+  )
 }

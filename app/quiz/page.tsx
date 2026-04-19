@@ -11,6 +11,7 @@ import BackgroundParticles from "@/components/BackgroundParticles";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { Suspense } from "react";
 
 interface QuizQuestionData {
   question?: string;
@@ -20,7 +21,7 @@ interface QuizQuestionData {
   topic?: string;
 }
 
-export default function QuizPage() {
+function QuizContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
    const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -188,5 +189,18 @@ export default function QuizPage() {
         </footer>
       </main>
     </div>
+  );
+}
+
+export default function QuizPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background dot-grid flex flex-col items-center justify-center p-6 text-center">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
+        <p className="font-bold text-primary italic uppercase tracking-widest text-[10px]">Initializing...</p>
+      </div>
+    }>
+      <QuizContent />
+    </Suspense>
   );
 }

@@ -5,18 +5,18 @@ import { Clock, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { getLocalHistory, type HistoryItem } from "@/lib/history";
+import { getQuizHistory, type QuizResult } from "@/lib/history";
 
 export default function HistoryList() {
-  const [history, setHistory] = useState<HistoryItem[] | undefined>(undefined);
+  const [history, setHistory] = useState<QuizResult[] | undefined>(undefined);
   const router = useRouter();
 
   useEffect(() => {
     // Load from localStorage
-    setHistory(getLocalHistory());
+    setHistory(getQuizHistory());
 
     // Listen for storage events (updates from other tabs / same tab via custom event)
-    const onStorage = () => setHistory(getLocalHistory());
+    const onStorage = () => setHistory(getQuizHistory());
     window.addEventListener("storage", onStorage);
     window.addEventListener("quizzy_history_updated", onStorage);
     return () => {
@@ -44,40 +44,39 @@ export default function HistoryList() {
     );
   }
 
-  const handleReattempt = (item: HistoryItem) => {
-    const encodedData = encodeURIComponent(JSON.stringify(item.data));
-    router.push(`/${item.mode}?data=${encodedData}`);
+  const handleReattempt = (item: QuizResult) => {
+    // Navigate home to regenerate for this topic
+    router.push(`/?topic=${encodeURIComponent(item.topic)}`);
   };
 
   return (
     <div className="flex flex-col gap-2 p-2">
       {history.map((item, i) => (
-        <motion.button
-          key={item._id}
+        <motion.div
+          key={item.id}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.05 }}
-          whileHover={{ x: 4 }}
-          onClick={() => handleReattempt(item)}
-          className="group text-left p-4 rounded-2xl border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-border transition-all duration-300"
+          className="group text-left p-4 rounded-2xl border border-transparent bg-white/50 border-zinc-100 hover:border-primary/20 transition-all duration-300"
         >
           <div className="flex justify-between items-center mb-1">
-            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-              {item.mode} set
+            <span className="text-[9px] font-black uppercase tracking-widest text-primary/40">
+              Conceptual Set
             </span>
             <span className="text-[9px] font-bold text-muted-foreground/50">
-              {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
             </span>
           </div>
 
-          <h4 className="font-bold text-[13px] line-clamp-1 group-hover:text-primary transition-colors">
-            {item.topic}
-          </h4>
-
-          <div className="mt-3 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all duration-300">
-            Reattempt <ArrowRight className="w-2.5 h-2.5" />
+          <div className="flex justify-between items-end">
+            <h4 className="font-bold text-[13px] line-clamp-1 group-hover:text-primary transition-colors uppercase">
+              {item.topic}
+            </h4>
+            <div className="text-[12px] font-black text-primary">
+              {item.score}/{item.total}
+            </div>
           </div>
-        </motion.button>
+        </motion.div>
       ))}
     </div>
   );
