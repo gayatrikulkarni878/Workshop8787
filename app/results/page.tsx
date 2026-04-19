@@ -18,7 +18,7 @@ function ResultsContent() {
   const router = useRouter(); 
   const data = searchParams.get("data");
 
-  const results = useMemo(() => {
+  const sessionData = useMemo(() => {
     if (!data) return null;
     try {
       return JSON.parse(decodeURIComponent(data));
@@ -28,43 +28,19 @@ function ResultsContent() {
     }
   }, [data]);
 
-  // Effects and Logic
-  useEffect(() => {
-    if (results && results.results) {
-      const correctCount = results.results.filter((r: any) => r.correct).length;
-      const totalCount = results.results.length;
-      const scorePercentage = (correctCount / totalCount) * 100;
+  const results = sessionData?.results || [];
+  const timeTaken = sessionData?.timeTaken || 0;
+  const sessionId = sessionData?.sessionId;
 
-      // Celebrate if score is high!
-      if (scorePercentage >= 70) {
-        const duration = 3 * 1000;
-        const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+  const { score, percentage } = useMemo(() => {
+    const s = results.filter((r: any) => r.correct).length;
+    const p = results.length > 0 ? (s / results.length) * 100 : 0;
+    return { score: s, percentage: p };
+  }, [results]);
 
-        const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-
-        const interval: any = setInterval(function() {
-          const timeLeft = animationEnd - Date.now();
-
-          if (timeLeft <= 0) {
-            return clearInterval(interval);
-          }
-
-          const particleCount = 50 * (timeLeft / duration);
-          confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-          confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-        }, 250);
-      }
-
-      // Save to local history with deduplication
-      saveQuizResult({
-        topic: results.results[0]?.topic || "AI Synthesis",
-        score: correctCount,
-        total: totalCount,
-        date: new Date().toISOString(),
-        sessionId: results.sessionId // Pass the unique session ID
-      });
-    }
+  const topicAnalysis = useMemo(() => {
+    const topics: Record<string, { correct: number; total: number }> = {};
+    results.forEach((r: any) => {
       const t = r.topic || "General";
       if (!topics[t]) topics[t] = { correct: 0, total: 0 };
       topics[t].total++;
@@ -73,30 +49,37 @@ function ResultsContent() {
     return Object.entries(topics);
   }, [results]);
 
-  if (results.length === 0) {
-    return (
-      <div className="min-h-screen bg-background dot-grid flex flex-col items-center p-8 md:p-12 lg:p-24 space-y-12">
-        <header className="w-full max-w-6xl flex justify-between items-center mb-12">
-           <div className="h-10 w-10 skeleton rounded-2xl" />
-           <div className="h-10 w-40 skeleton rounded-2xl" />
-        </header>
+  useEffect(() => {
+    if (results.length > 0) {
+      saveQuizResult({
+        topic: results[0]?.topic || "AI Synthesis",
+        score,
+        total: results.length,
+        sessionId: sessionId
+      });
 
-        <main className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-12">
-           <aside className="lg:col-span-4 space-y-8">
-              <div className="h-96 skeleton rounded-[3rem]" />
-              <div className="h-64 skeleton rounded-[2.5rem]" />
-           </aside>
-           <section className="lg:col-span-8 space-y-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-40 skeleton rounded-[2rem] w-full" />
-              ))}
-           </section>
-        </main>
-        
-        <div className="fixed inset-0 flex flex-col items-center justify-center z-50 pointer-events-none">
-           <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
-           <p className="font-bold text-primary italic uppercase tracking-widest text-[10px]">Processing Diagnostic...</p>
-        </div>
+      if (percentage >= 70) {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+        const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+        const interval: any = setInterval(function() {
+          const timeLeft = animationEnd - Date.now();
+          if (timeLeft <= 0) return clearInterval(interval);
+          const particleCount = 50 * (timeLeft / duration);
+          confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+          confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+        }, 250);
+      }
+    }
+  }, [results, score, percentage, sessionId]);
+
+  if (!sessionData) {
+    return (
+      <div className="min-h-screen bg-background dot-grid flex flex-col items-center justify-center p-6 text-center">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
+        <p className="font-bold text-primary italic uppercase tracking-widest text-[10px]">Assembling Neural Outcome...</p>
       </div>
     );
   }
@@ -106,12 +89,6 @@ function ResultsContent() {
       <BackgroundParticles />
       <FloatingDecoIcons />
       
-      {/* Immersive Background Effects */}
-      <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
-        <div className="absolute top-0 -left-10 w-96 h-96 bg-primary/10 rounded-full blur-[140px]" />
-        <div className="absolute bottom-0 -right-10 w-96 h-96 bg-primary/10 rounded-full blur-[140px]" />
-      </div>
-
       <header className="w-full max-w-6xl flex items-center justify-between p-8 md:p-12 z-10 sticky top-0 backdrop-blur-3xl border-b border-primary/5">
         <div className="flex items-center gap-6">
           <Link href="/">
@@ -134,14 +111,12 @@ function ResultsContent() {
 
       <main className="flex-1 w-full max-w-6xl p-8 lg:p-16 z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Diagnostic Sidebar */}
           <div className="lg:col-span-4 space-y-12">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="p-12 rounded-[3rem] glass border-white text-center relative overflow-hidden"
             >
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
               <div className="mb-10 flex justify-center">
                 <ScoreCircle score={score} total={results.length} />
               </div>
@@ -158,7 +133,6 @@ function ResultsContent() {
               </div>
             </motion.div>
 
-            {/* Motivational Message */}
             <motion.div 
                initial={{ opacity: 0, y: 20 }}
                animate={{ opacity: 1, y: 0 }}
@@ -173,7 +147,6 @@ function ResultsContent() {
                </p>
             </motion.div>
 
-            {/* Analysis Matrix */}
             <motion.div 
                initial={{ opacity: 0, x: -20 }}
                animate={{ opacity: 1, x: 0 }}
@@ -185,7 +158,7 @@ function ResultsContent() {
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Topic Mastery</span>
                </div>
                <div className="space-y-6">
-                  {topicAnalysis.map(([topic, stats], idx) => (
+                  {topicAnalysis.map(([topic, stats]: any, idx) => (
                     <div key={topic} className="space-y-2">
                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400">
                           <span className="truncate max-w-[120px]">{topic}</span>
@@ -200,7 +173,6 @@ function ResultsContent() {
             </motion.div>
           </div>
 
-          {/* Detailed Review */}
           <div className="lg:col-span-8 space-y-10">
             <div className="flex items-center justify-between mb-2 px-4">
                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Conceptual Review</span>
@@ -217,7 +189,7 @@ function ResultsContent() {
             </div>
 
             <div className="space-y-6 overflow-y-auto max-h-[70vh] pr-4 no-scrollbar">
-              {results.map((r, i) => (
+              {results.map((r: any, i: number) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
@@ -254,7 +226,7 @@ function ResultsContent() {
                               <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Correct Answer</span>
                               <p className="text-sm font-bold text-emerald-600">{r.answer}</p>
                            </div>
-                         )}
+                          )}
                       </div>
                       <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100/50">
                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Intelligence Insight</p>
@@ -266,7 +238,7 @@ function ResultsContent() {
               ))}
             </div>
 
-             <footer className="pt-10 flex flex-col md:flex-row items-center justify-center gap-6">
+            <footer className="pt-10 flex flex-col md:flex-row items-center justify-center gap-6">
               <Link href="/">
                 <Button size="lg" className="h-16 px-12 rounded-[2rem] font-black uppercase text-xs tracking-[0.3em] gap-3 bg-primary text-white shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-105 active:scale-95 border-none">
                   <RefreshCw className="w-4 h-4" /> Reset Mastery Session
@@ -275,10 +247,7 @@ function ResultsContent() {
               <div className="flex gap-4">
                  <Button 
                    variant="outline" 
-                   onClick={() => {
-                     const text = `I just scored ${score}/${results.length} on Quizzy AI! 🧠🔥\n\nCheck it out: ${window.location.origin}`;
-                     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.origin)}`, '_blank');
-                   }}
+                   onClick={() => window.print()}
                    className="h-16 w-16 rounded-[2rem] glass border-white/80 hover:scale-110 transition-transform"
                  >
                     <Send className="w-5 h-5 text-primary" />
