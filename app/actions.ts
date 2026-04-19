@@ -25,12 +25,12 @@ async function extractTextFromFile(file: File): Promise<string> {
         {
           role: "user",
           content: [
-            { type: "text", text: "Extract all educational text from this image concisely." },
+            { type: "text", text: "Please accurately extract ALL text from this image. This may be heavily handwritten notes, cursive, diagrams, whiteboards, or sloppy study notes. Transcribe the handwritten or typed text as concisely and completely as possible so it can be used for generating quizzes." },
             { type: "image_url", image_url: { url: `data:${file.type};base64,${visionData}` } }
           ]
         }
       ],
-      model: "llama-3.2-11b-vision-preview",
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
     });
     return response.choices[0].message.content || "";
   }
@@ -70,19 +70,48 @@ export async function generateContent(formData: FormData) {
 
   let textToProcess = notes || "";
 
-  if (file && file.size > 0) {
-    try {
-      const extractedText = await extractTextFromFile(file);
-      textToProcess += "\n" + extractedText;
-    } catch (error) {
-      console.error("Error extracting text from file:", error);
-      throw new Error("Failed to extract text from file");
-    }
-  }
-
-  if (!textToProcess.trim()) throw new Error("No content provided");
-
   try {
+    if (file && file.size > 0) {
+      try {
+        const extractedText = await extractTextFromFile(file);
+        textToProcess += "\n" + extractedText;
+      } catch (error) {
+        console.error("Error extracting text from file:", error);
+        throw new Error("Failed to extract text from file. The file might be corrupted or too large.");
+      }
+    }
+
+    if (!textToProcess.trim()) {
+      if (file && file.type === "application/pdf") {
+        try {
+           console.log("PDF appears to be scanned/handwritten. Attempting OCR...");
+           const buffer = Buffer.from(await file.arrayBuffer());
+           const formDataOCR = new FormData();
+           formDataOCR.append('base64Image', 'data:application/pdf;base64,' + buffer.toString('base64'));
+           formDataOCR.append('language', 'eng');
+           formDataOCR.append('isOverlayRequired', 'false');
+           
+           const ocrRes = await fetch('https://api.ocr.space/parse/image', {
+              method: 'POST',
+              headers: { 'apikey': 'helloworld' },
+              body: formDataOCR
+           });
+           const ocrJson = await ocrRes.json();
+           if (ocrJson.ParsedResults && ocrJson.ParsedResults.length > 0) {
+              textToProcess = ocrJson.ParsedResults.map((p: any) => p.ParsedText).join("\n");
+           }
+        } catch (ocrError) {
+           console.error("OCR API failed", ocrError);
+        }
+        
+        if (!textToProcess.trim()) {
+          throw new Error("Cannot extract text from this handwritten PDF. The OCR engine failed or the PDF is too large. Please upload the notes as Images (.jpg/.png) instead.");
+        }
+      } else {
+        throw new Error("No content provided");
+      }
+    }
+
     // Generate content using lightning-fast model
     const result = await generateQuizOrFlashcard(textToProcess.substring(0, 6000), mode, count, difficulty);
 

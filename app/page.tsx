@@ -84,12 +84,103 @@ export default function Home() {
 
   const [error, setError] = useState<string | null>(null);
 
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 1000;
+          const MAX_HEIGHT = 1000;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+          } else {
+            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(new File([blob], file.name, { type: "image/jpeg", lastModified: Date.now() }));
+            } else {
+              resolve(file);
+            }
+          }, "image/jpeg", 0.7);
+        };
+        img.onerror = () => resolve(file);
+      };
+      reader.onerror = () => resolve(file);
+    });
+  };
+
+  const convertPdfToImage = async (file: File): Promise<File> => {
+    const pdfjsLib = window['pdfjs-dist/build/pdf'] || await new Promise<any>((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+      script.onload = () => {
+        const workerScript = document.createElement('script');
+        workerScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        workerScript.onload = () => {
+          (window as any)['pdfjs-dist/build/pdf'].GlobalWorkerOptions.workerSrc = workerScript.src;
+          resolve((window as any)['pdfjs-dist/build/pdf']);
+        };
+        document.head.appendChild(workerScript);
+      };
+      document.head.appendChild(script);
+    });
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 2.0 });
+    
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext("2d");
+    
+    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+    
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(new File([blob], file.name.replace('.pdf', '.jpg'), { type: 'image/jpeg' }));
+        else resolve(file);
+      }, 'image/jpeg', 0.8);
+    });
+  };
+
   const handleGenerate = async () => {
     if (!notes.trim() && !file) return;
     setError(null);
     const formData = new FormData();
     formData.append("notes", notes);
-    if (file) formData.append("file", file);
+    
+    if (file) {
+      if (file.type === "application/pdf") {
+        try {
+          const pdfImage = await convertPdfToImage(file);
+          const compressedPdfImage = await compressImage(pdfImage);
+          formData.append("file", compressedPdfImage);
+        } catch (e) {
+          console.error("PDF to image failed", e);
+          formData.append("file", file); // Fallback to raw PDF
+        }
+      } else if (file.type.startsWith("image/")) {
+        const compressedFile = await compressImage(file);
+        formData.append("file", compressedFile);
+      } else {
+        formData.append("file", file);
+      }
+    }
+    
     formData.append("mode", activeMode);
     formData.append("difficulty", difficulty);
     formData.append("count", questionCount.toString());
@@ -102,11 +193,11 @@ export default function Home() {
           const encodedData = encodeURIComponent(JSON.stringify(response.data));
           router.push(`/${response.mode}?data=${encodedData}`);
         } else {
-          setError(response.error || "Generation failed");
+          setError(response.error || "Generation failed. Make sure your image isn't completely blank or blurry.");
         }
       } catch (err) {
         console.error(err);
-        setError("Connection error. Please try again.");
+        setError("Connection timeout or payload too large. Please try a smaller file.");
       }
     });
   };
