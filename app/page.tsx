@@ -290,12 +290,12 @@ export default function Home() {
                             "w-full p-4 rounded-2xl text-left border flex items-center gap-4 transition-all duration-500",
                             activeMode === mode.id 
                               ? "bg-white border-primary shadow-lg text-primary" 
-                              : "border-transparent text-zinc-400 hover:border-primary/10"
+                              : "border-zinc-300 bg-white/60 text-zinc-800 font-bold hover:border-primary/30 hover:bg-white/90 shadow-sm"
                           )}
                         >
                           <div className={cn(
                              "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-700 shadow-sm",
-                             activeMode === mode.id ? "bg-primary text-white shadow-md shadow-primary/20 rotate-0" : "bg-zinc-100 rotate-[-5deg]"
+                             activeMode === mode.id ? "bg-primary text-white shadow-md shadow-primary/20 rotate-0" : "bg-zinc-200 text-zinc-700 rotate-[-5deg] shadow-sm"
                           )}>
                             <mode.icon className="w-4 h-4" />
                           </div>
