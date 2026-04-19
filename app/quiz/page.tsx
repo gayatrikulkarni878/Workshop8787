@@ -94,10 +94,10 @@ function QuizContent() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex flex-col items-center bg-background dot-grid text-foreground antialiased">
+    <div className="min-h-screen relative overflow-x-hidden flex flex-col items-center bg-background dot-grid text-foreground antialiased">
       <BackgroundParticles />
       
-      <header className="w-full max-w-6xl flex items-center justify-between p-8 md:p-12 z-20 sticky top-0 backdrop-blur-3xl border-b border-primary/5">
+      <header className="w-full max-w-6xl flex items-center justify-between p-4 md:p-12 z-20 sticky top-0 backdrop-blur-3xl border-b border-primary/5">
         <div className="flex items-center gap-6">
           <Link href="/">
             <Button variant="outline" size="icon" className="rounded-2xl glass border-white/80 hover:scale-110 transition-transform">
@@ -156,7 +156,7 @@ function QuizContent() {
           </AnimatePresence>
         </section>
 
-        <footer className="w-full flex justify-between items-center p-8 md:p-12 mt-auto">
+        <footer className="w-full flex justify-between items-center p-4 md:p-12 mt-auto">
           <Button 
             variant="ghost" 
             size="lg" 

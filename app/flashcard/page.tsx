@@ -75,11 +75,11 @@ function FlashcardContent() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen relative overflow-hidden bg-background text-foreground dot-grid flex flex-col items-center"
+      className="min-h-screen relative overflow-x-hidden bg-background text-foreground dot-grid flex flex-col items-center"
     >
       <BackgroundParticles />
       
-      <header className="w-full max-w-6xl flex items-center justify-between p-8 md:p-12 z-20 sticky top-0 backdrop-blur-3xl border-b border-primary/5">
+      <header className="w-full max-w-6xl flex items-center justify-between p-4 md:p-12 z-20 sticky top-0 backdrop-blur-3xl border-b border-primary/5">
         <div className="flex items-center gap-6">
           <Link href="/">
             <Button variant="outline" size="icon" className="rounded-2xl glass border-white/80 hover:scale-110 transition-transform">
@@ -122,7 +122,7 @@ function FlashcardContent() {
         </AnimatePresence>
       </main>
 
-      <footer className="w-full max-w-4xl flex justify-between items-center p-8 md:p-12 mt-auto mb-10 z-20">
+      <footer className="w-full max-w-4xl flex justify-between items-center p-4 md:p-12 mt-auto mb-6 z-20">
         <Button 
           variant="ghost" 
           size="lg" 

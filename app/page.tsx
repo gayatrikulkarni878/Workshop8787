@@ -112,7 +112,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen relative overflow-hidden bg-background dot-grid text-foreground antialiased selection:bg-primary/20">
+    <div className="flex min-h-screen relative overflow-x-hidden bg-background dot-grid text-foreground antialiased selection:bg-primary/20">
       <BackgroundParticles />
       <FloatingDecoIcons />
       <Sidebar className="hidden lg:flex" />
@@ -140,7 +140,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.8 }}
-                className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] text-glow"
+                className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.1] text-glow"
               >
                 Refine Your <br className="hidden md:block"/>
                 <span className="text-primary italic relative inline-block">
@@ -166,7 +166,7 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
               <div className="flex flex-col md:flex-row min-h-[400px] relative z-10">
                 {/* Primary Panel */}
-                <div className="flex-1 p-8 md:p-10 space-y-8 flex flex-col border-r border-zinc-100/50">
+                <div className="flex-1 p-6 md:p-10 space-y-8 flex flex-col border-b md:border-b-0 md:border-r border-zinc-100/50">
                   <textarea
                     placeholder="Paste your study materials here..."
                     className="h-32 w-full bg-transparent border-none focus:ring-0 resize-none text-xl font-semibold tracking-tight placeholder:text-zinc-200 py-2 transition-all leading-[1.3] outline-none"
@@ -236,7 +236,7 @@ export default function Home() {
                 </div>
 
                 {/* Sidebar Controls */}
-                <div className="w-full md:w-[320px] p-8 bg-zinc-50/40 flex flex-col gap-6 relative overflow-hidden text-black">
+                <div className="w-full md:w-[320px] p-6 md:p-8 bg-zinc-50/40 flex flex-col gap-6 relative overflow-hidden text-black">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10" />
                   
                   <div className="space-y-6 relative z-10">

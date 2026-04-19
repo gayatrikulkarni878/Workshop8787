@@ -85,11 +85,11 @@ function ResultsContent() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex flex-col items-center bg-background dot-grid text-foreground">
+    <div className="min-h-screen relative overflow-x-hidden flex flex-col items-center bg-background dot-grid text-foreground">
       <BackgroundParticles />
       <FloatingDecoIcons />
       
-      <header className="w-full max-w-6xl flex items-center justify-between p-8 md:p-12 z-10 sticky top-0 backdrop-blur-3xl border-b border-primary/5">
+      <header className="w-full max-w-6xl flex items-center justify-between p-6 md:p-12 z-10 sticky top-0 backdrop-blur-3xl border-b border-primary/5">
         <div className="flex items-center gap-6">
           <Link href="/">
             <Button variant="outline" size="icon" className="rounded-2xl glass border-white/80 hover:scale-110 transition-transform">
@@ -109,8 +109,8 @@ function ResultsContent() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-6xl p-8 lg:p-16 z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <main className="flex-1 w-full max-w-6xl p-4 md:p-16 z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-4 space-y-12">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
